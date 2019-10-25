@@ -1,0 +1,40 @@
+version: 2.1
+description: |
+  AWS Assume Role and Generate Temporary Credentials
+
+orbs:
+  aws-cli: circleci/aws-cli@0.1.9
+
+commands:
+  assume_role:
+    description: Installs AWS CLI, setup the IAM user keys and assume specified role
+    parameters:
+      access_key_id:
+        description: AWS Access Key ID Variable Name
+        type: env_var_name
+        default: AWS_ACCESS_KEY_ID
+      secret_access_key:
+        description: AWS Secret Access Key Variable Name
+        type: env_var_name
+        default: AWS_SECRET_ACCESS_KEY
+      profile_name:
+        description: AWS Profile Name
+        type: string
+        default: default
+      account:
+        description: AWS account in which the assumed role is
+        type: string
+      role:
+        description: Role name
+        type: string
+    steps:
+      - aws-cli/install
+      - run: |
+          aws configure set aws_access_key_id $<< parameters.access_key_id >> --profile << parameters.profile_name >> && \
+          aws configure set aws_secret_access_key $<< parameters.secret_access_key >> --profile << parameters.profile_name >> && \
+          cp .circleci/aws_config ~/.aws/config
+      - run: |
+          assumed_role=$(aws sts assume-role --role-arn "arn:aws:iam::<< parameters.account >>:role/<< parameters.role >>" --role-session-name "RoleSession1" --profile << parameters.profile_name >>) && \
+          export AWS_ACCESS_KEY_ID=$(echo $assumed_role | jq .Credentials.AccessKeyId | xargs) && \
+          export AWS_SECRET_ACCESS_KEY=$(echo $assumed_role | jq .Credentials.SecretAccessKey | xargs) && \
+          export AWS_SESSION_TOKEN=$(echo $assumed_role | jq .Credentials.SessionToken | xargs) 
