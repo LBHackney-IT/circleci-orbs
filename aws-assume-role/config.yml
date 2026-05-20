@@ -3,8 +3,8 @@ description: |
   Assumes an AWS role and exports temporary credentials
 
 orbs:
-  aws-cli: circleci/aws-cli@0.1.9
-      
+  aws-cli: circleci/aws-cli@5.4.1
+
 commands:
     assume_role:
        description: Installs AWS CLI, setup the IAM user keys and assume specified role
@@ -29,18 +29,17 @@ commands:
             type: string
        steps:
           - aws-cli/install
-          - run: 
+          - run:
               name: Configure CircleCI IAM user
               command: |
                 aws configure set aws_access_key_id $<< parameters.access_key_id >> --profile << parameters.profile_name >> && \
                 aws configure set aws_secret_access_key $<< parameters.secret_access_key >> --profile << parameters.profile_name >> && \
                 cp .circleci/config ~/.aws/config
-              
-          - run: 
+
+          - run:
               name: Assume AWS role and generate temporary credentials
               command: |
                 assumed_role=$(aws sts assume-role --role-arn "arn:aws:iam::<< parameters.account >>:role/<< parameters.role >>" --role-session-name "RoleSession1" --profile << parameters.profile_name >>) && \
                 aws configure set aws_access_key_id $(echo $assumed_role | jq .Credentials.AccessKeyId | xargs) --profile << parameters.profile_name >> && \
                 aws configure set aws_secret_access_key $(echo $assumed_role | jq .Credentials.SecretAccessKey | xargs) --profile << parameters.profile_name >> && \
                 aws configure set aws_session_token $(echo $assumed_role | jq .Credentials.SessionToken | xargs) --profile << parameters.profile_name >>
-                
