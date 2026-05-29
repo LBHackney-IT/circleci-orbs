@@ -28,6 +28,7 @@ jobs:
           name: Publish dev version
           command: circleci orb publish aws-assume-role/config.yml lbh-hackit/aws_assume_role@dev:${CIRCLE_SHA1}
       - run:
+          # For a minor or major release, change 'patch' to 'minor' or 'major'
           name: Promote to production (patch)
           command: circleci orb publish promote lbh-hackit/aws_assume_role@dev:${CIRCLE_SHA1} patch
 
