@@ -1,0 +1,52 @@
+version: 2.1
+
+orbs:
+  cli: circleci/circleci-cli@0.1
+
+jobs:
+  validate:
+    executor: cli/default
+    steps:
+      - checkout
+      - run:
+          name: Validate orb
+          command: circleci orb validate aws-assume-role/config.yml
+
+  publish-dev:
+    executor: cli/default
+    steps:
+      - checkout
+      - run:
+          name: Publish dev version
+          command: circleci orb publish aws-assume-role/config.yml lbh-hackit/aws_assume_role@dev:${CIRCLE_SHA1}
+
+  publish-production:
+    executor: cli/default
+    steps:
+      - checkout
+      - run:
+          name: Publish dev version
+          command: circleci orb publish aws-assume-role/config.yml lbh-hackit/aws_assume_role@dev:${CIRCLE_SHA1}
+      - run:
+          # For a minor or major release, change 'patch' to 'minor' or 'major'
+          name: Promote to production (patch)
+          command: circleci orb publish promote lbh-hackit/aws_assume_role@dev:${CIRCLE_SHA1} patch
+
+workflows:
+  validate-and-release:
+    jobs:
+      - validate
+      - publish-dev:
+          context: circleci-orb-publishing
+          requires:
+            - validate
+          filters:
+            branches:
+              only: development
+      - publish-production:
+          context: circleci-orb-publishing
+          requires:
+            - validate
+          filters:
+            branches:
+              only: main
